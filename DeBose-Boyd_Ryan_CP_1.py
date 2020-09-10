@@ -7,14 +7,15 @@ Created on Fri Aug 21 11:48:53 2020
 """
 #1 hour last week
 #Hours 9-9: 2
+#Hours 9-10 1:40
 
 
 import os
 import pandas as pd
 import random
-from xlwt import Workbook
+#import xlwt
 
-from datetime import datetime
+import xlsxwriter
 
 global length
 
@@ -25,8 +26,8 @@ slots = []
 def blank():
     global wb
     global data
-    wb = Workbook()
-    data = wb.add_sheet('Data')
+    wb = xlsxwriter.Workbook('Calendar.xlsx')
+    data = wb.add_worksheet()
     data.write(0, 1, "Monday")
     data.write(0, 2, "Tuesday")
     data.write(0,3, "Wednesday")
@@ -71,8 +72,6 @@ def blank():
         
         row += 1
     
-    
-    wb.save("Calendar.xls")
 
 blank()
 
@@ -156,15 +155,28 @@ def courseToTimeSlots(crs):
     begin = excelindeces[0]
     end = excelindeces[1]
     
+    #align: vcenter
+    cell_format = wb.add_format({'text_wrap': True})
+    merge_format = wb.add_format({'align': 'center', 
+    'text_wrap': True
+    })
+    
+    
+    big_string = crs.getCourse_num() + "\n" + crs.getCourse_time() + "\n" + crs.getCourse_loc()
+                
     for day in dayindeces:
         for v in range(begin, end+1):
-            data.write(v, day, crs.getCourse_num())
+            if v == begin:
+                #data.write(v, day, big_string, cell_format)
+                data.merge_range(begin, day, end, day, big_string, merge_format)
     
-    wb.save("Calendar.xls")
+    wb.close()
+           
 
 courseToTimeSlots(course1)
 
-    
+
+
     
     
     

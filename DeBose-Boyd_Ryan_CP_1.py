@@ -8,7 +8,9 @@ Created on Fri Aug 21 11:48:53 2020
 #1 hour last week
 #Hours 9-9: 2
 #Hours 9-10 1:40
+#Hours 9-11 1:30 + 
 
+import fitz
 
 import os
 import pandas as pd
@@ -173,10 +175,30 @@ def courseToTimeSlots(crs):
     wb.close()
            
 
-courseToTimeSlots(course1)
+#courseToTimeSlots(course1)
+#pdfobj = open('course_catalog.pdf', 'rb')
+#pdfread = PyPDF2.PdfFileReader(pdfobj)
+#print(pdfread.numPages)
+#textpage29 = pdfread.getPage(28)
+#y = textpage29.extractText()
 
+pdf_doc = "course_catalog.pdf"
+doc = fitz.open(pdf_doc)
+print("Number of pages: %i" % doc.pageCount)
+print(doc.metadata)
+page29 = doc.loadPage(28)
+page29text = page29.getText("text")
 
+g = page29text.index('GS-QC-5000')
+h = page29text.index('GS-QC-5010')
+i = page29text.index('GS-QC-5030')
 
+#areas = page29.getText('GS-QC-5000')
+print(g)
+print(h)
+print(page29text[h:i])
+
+    
     
     
     

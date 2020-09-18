@@ -8,9 +8,18 @@ Created on Fri Aug 21 11:48:53 2020
 #1 hour last week
 #Hours 9-9: 2
 #Hours 9-10 1:40
-#Hours 9-11 1:30 + 
+#Hours 9-11 1:30 + 1 = 2:30
+#Hours 9-13 2:30 
+#Hours 9-17 1:15, :45 = 2:00
+#11:40 hours so far
+#Hours 9-18: 1:15
 
 import fitz
+#install?
+import xlrd
+#install?
+
+import re
 
 import os
 import pandas as pd
@@ -18,12 +27,46 @@ import random
 #import xlwt
 
 import xlsxwriter
+#install?
 
 global length
 
 global slots
 slots = []
 
+global wkbk
+
+
+def createCourseObj(crs):
+    
+    wrkbk = xlrd.open_workbook("Catalog.xlsx")
+    sheet = wrkbk.sheet_by_index(0)
+    rows = sheet.nrows
+    foundCourse = False
+    courseObject = None
+    for c in range(rows):
+        current_course = sheet.cell_value(c, 0)
+        current_course = current_course.strip()
+        crs = crs.strip()
+        if (current_course == crs):
+            courseNumber = sheet.cell_value(c, 0)
+            courseName = sheet.cell_value(c, 1)
+            courseDays = sheet.cell_value(c, 2)
+            courseTime = sheet.cell_value(c, 3)
+            courseLoc = sheet.cell_value(c, 4)
+            
+            courseObject = Course(courseNumber, courseName,
+                                  courseDays, courseTime,
+                                  courseLoc)
+            foundCourse = True
+            break
+    
+    if foundCourse == True:
+        return courseObject
+    else:
+        return courseObject
+        
+        
 #Creates blank excel spreadsheet with columns labeled
 def blank():
     global wb
@@ -74,15 +117,11 @@ def blank():
         
         row += 1
     
-
-blank()
-
 #Course object
 class Course:
-    def __init__(self, course_num, course_name, course_desc, course_days, course_time, course_loc):
+    def __init__(self, course_num, course_name, course_days, course_time, course_loc):
         self.course_num = course_num
         self.course_name = course_name
-        self.course_desc = course_desc
         self.course_days = course_days
         self.course_time = course_time
         self.course_loc = course_loc
@@ -93,8 +132,6 @@ class Course:
     def getCourse_name(self):
         return self.course_name
         
-    def getCourse_desc(self):
-        return self.course_desc
     
     #Convert Day of week to be converted from string to number
     def getCourse_days(self):
@@ -109,7 +146,7 @@ class Course:
         
 #Template course object   
 course1 = Course("GS-QC-6301", "Practical Introduction to Programming for Scientists",
-                 "Course Description", "MF", "9:00 - 10:30", "N315")
+                 "MF", "4:00-5:00 ", "N315")
 
 #Converts meeting time to numbers for excel spreadsheet
 def dayToNumber(crs):
@@ -138,10 +175,12 @@ def dayToNumber(crs):
 #Converts begin/end meeting times to corresponding timeslots in excel
 def meetToNumber(crs):
     
-    t =  crs.getCourse_time()
-    times = t.split(' - ')
-    begin_time = times[0]
-    end_time = times[1]
+    t =  str(crs.getCourse_time())
+    times = t.split('-')
+    begin_time = times[0].strip()
+    begin_time = begin_time.lstrip("0")
+    
+    end_time = times[1].strip()
     
     begin_excel_index = slots.index(begin_time) + 1
     end_excel_index = slots.index(end_time) + 1
@@ -172,33 +211,18 @@ def courseToTimeSlots(crs):
                 #data.write(v, day, big_string, cell_format)
                 data.merge_range(begin, day, end, day, big_string, merge_format)
     
-    wb.close()
            
+def find(ident, courseSeq):
+    try:
+        return courseSeq.index(ident)
+    except:
+        return -1
 
-#courseToTimeSlots(course1)
-#pdfobj = open('course_catalog.pdf', 'rb')
-#pdfread = PyPDF2.PdfFileReader(pdfobj)
-#print(pdfread.numPages)
-#textpage29 = pdfread.getPage(28)
-#y = textpage29.extractText()
+weekIdentifiers = ["M,W,F ", "T R", "M W F", "M,,", "T,,", "M W", "MTWR", "W ", "F ", "R "]
 
-pdf_doc = "course_catalog.pdf"
-doc = fitz.open(pdf_doc)
-print("Number of pages: %i" % doc.pageCount)
-print(doc.metadata)
-page29 = doc.loadPage(28)
-page29text = page29.getText("text")
+#ex_course = "GS-CC-6401"
 
-g = page29text.index('GS-QC-5000')
-h = page29text.index('GS-QC-5010')
-i = page29text.index('GS-QC-5030')
 
-#areas = page29.getText('GS-QC-5000')
-print(g)
-print(h)
-print(page29text[h:i])
-
-    
     
     
     

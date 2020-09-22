@@ -13,6 +13,9 @@ Created on Fri Aug 21 11:48:53 2020
 #Hours 9-17 1:15, :45 = 2:00
 #11:40 hours so far
 #Hours 9-18: 1:15
+#Hours 9-20: 1:00
+#Hours 9-21: 1:15
+
 
 import fitz
 #install?
@@ -87,7 +90,7 @@ def blank():
     row = 0
     
     time_slot = ""
-    for index in range(38):
+    for index in range(48):
         
         if index % 4 == 1:
             time_slot = str(hour) + o_clock
@@ -147,6 +150,7 @@ class Course:
 #Template course object   
 course1 = Course("GS-QC-6301", "Practical Introduction to Programming for Scientists",
                  "MF", "4:00-5:00 ", "N315")
+
 
 #Converts meeting time to numbers for excel spreadsheet
 def dayToNumber(crs):
@@ -220,7 +224,10 @@ def find(ident, courseSeq):
 
 weekIdentifiers = ["M,W,F ", "T R", "M W F", "M,,", "T,,", "M W", "MTWR", "W ", "F ", "R "]
 
+    
 #ex_course = "GS-CC-6401"
+
+
 
 
     

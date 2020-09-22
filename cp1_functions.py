@@ -17,6 +17,7 @@ Created on Fri Aug 21 11:48:53 2020
 #Hours 9-21: 1:15
 
 
+#install
 import fitz
 #install?
 import xlrd

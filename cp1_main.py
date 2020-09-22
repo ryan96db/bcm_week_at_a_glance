@@ -9,6 +9,11 @@ Created on Fri Sep 18 10:15:43 2020
 import cp1_functions
 import numpy as np
 import xlrd
+import PyPDF2
+import os
+
+import fitz
+#install
 
 cp1_functions.blank()
 
@@ -40,6 +45,36 @@ for j in range(len(some_courses)):
     else:
         print("Course Name Not Found")
 
+#If user chooses to input file names of syllabi (PDF Format)
+#function will parse syllabus for course name and create
+#schedule from there.
+
+def courseFromPDF(pdfFileName):
+    pdfObj = fitz.open(pdfFileName)
+    
+    pages = pdfObj.pageCount
+    
+    wrkbk = xlrd.open_workbook("Catalog.xlsx")
+    sheet = wrkbk.sheet_by_index(0)
+    
+    rows = sheet.nrows
+    courseNameFound = False
+    
+    
+    for page in range(pages):
+        pageObject = pdfObj.loadPage(page)
+        txt = pageObject.getText("text")
+        c = 0
+        while c < rows and courseNameFound == False:
+            current_course = sheet.cell_value(c, 0)
+            current_course = current_course.strip()
+            if current_course in txt:
+                courseNameFound = True
+            else:
+                c+= 1
+    
+    course = cp1_functions.createCourseObj(current_course)
+    cp1_functions.courseToTimeSlots(course)
 
 
 def courseConflict(course_arr):
@@ -53,7 +88,7 @@ def courseConflict(course_arr):
         sht = wk.sheet_by_index(0)
         
         twodimarray = []
-        course1= cp1_functions.createCourseObj(some_courses[b])
+        course1= cp1_functions.createCourseObj(course_arr[b])
         
         day_array_one = cp1_functions.dayToNumber(course1)
         time_array_one = cp1_functions.meetToNumber(course1)
@@ -64,7 +99,7 @@ def courseConflict(course_arr):
         if not(h == b-1):
             h+=1
         
-            course2= cp1_functions.createCourseObj(some_courses[h])
+            course2= cp1_functions.createCourseObj(course_arr[h])
             dayConf = ""
             timeConf = ""
             
@@ -110,17 +145,13 @@ def courseConflict(course_arr):
                 print("\n" + "Your schedule will contain the conflicting course that was most recently entered. \n")
               
     return anyCourseConflict
-        
+ 
+# q = courseConflict(some_courses)
+# if q == False:
+#     print("Schedule Complete! ")
+# else:
+#courseConflict(some_courses)
     
-    
-    
-q = courseConflict(some_courses)
-if q == False:
-    print("Schedule Complete! ")
-else:
-    courseConflict(some_courses)
-    
-
 cp1_functions.wb.close()
     
     

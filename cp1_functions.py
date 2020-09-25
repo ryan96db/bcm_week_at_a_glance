@@ -14,7 +14,9 @@ Created on Fri Aug 21 11:48:53 2020
 #11:40 hours so far
 #Hours 9-18: 1:15
 #Hours 9-20: 1:00
-#Hours 9-21: 1:15
+#Hours 9-21: 1:15 + 1:30 
+#16:40 hours so far
+#Hours 9-23: 1:00 + 1:45
 
 
 #install
@@ -25,7 +27,7 @@ import xlrd
 
 import re
 
-import os
+import os.path
 import pandas as pd
 import random
 #import xlwt
@@ -39,6 +41,103 @@ global slots
 slots = []
 
 global wkbk
+
+def locationInfo(course):
+    cat_building_abbrev = {"A": "Cullen", "B": "Cullen", "CNRC": "Children's Nutritional Reasearch Center",
+                       "D": "Jewish Institute for Medical Research", "E": "MD Anderson Cancer Center",
+                       "M": "Michael E. DeBakey Center (BCM)", "N": "Alkek Tower", "R": "Alkek Bldg for Biomedical Research (ABBR)", 
+                       "S": "Smith Research Wing", "T": "Ben Taub Research Center", "TXFC": "Texas Children’s Feigin Center"}
+    loc = course.getCourse_loc()
+    
+    loc = loc.strip()
+
+    nri = "NRI"
+    
+    bcm_map_building_abbrev = {"Alkek Bldg for Biomedical Research (ABBR)": "ABBR","Alkek Tower":"ALKT","Ben Taub Research Center":"BCMT",
+                               "Children's Nutritional Reasearch Center":"CNRC","Cullen":"BCMC", "Texas Children’s Feigin Center":"TXFC",
+                               "NRI":"NRIB", "Jewish Institute for Medical Research":"BCMD",
+                                "MD Anderson Cancer Center":"MDAC", "Michael E. DeBakey Center (BCM)":"BCMM",
+                                "Rice University":"RICE", "Smith Research Wing":"BCMS"  }
+    
+    
+    for key in cat_building_abbrev:
+        if key in loc:
+            if not (loc[1] == "."):
+                
+                bcm_map_key = cat_building_abbrev[key]
+                web_map = bcm_map_building_abbrev[bcm_map_key]
+            else:
+                web_map = bcm_map_building_abbrev[nri]
+    
+    web_map_link = "https://www.bcm.edu/map/#!" + web_map
+    
+    return web_map_link
+    
+def manualCourseArray():
+    cont = True
+    course_array = []
+    while cont == True:
+        courseInp = input("Please enter course numbers (press q to quit): ")
+        
+        if courseInp.upper() == "Q":
+            break
+        
+        courseObj = None
+        courseObj = createCourseObj(courseInp)
+
+        if not (courseObj == None):
+
+            course_array.append(courseInp)
+            
+        else:
+            print("Course name entered was not found, so course was not added.")
+        
+    return course_array
+
+def syllabiArray():
+    cont = True
+    pdf_syl_array = []
+    while cont == True:
+        pdfInp = input("Please enter syllabi file names, including file extension (press q to quit): ")
+        
+        if pdfInp.upper() == "Q":
+            break
+        
+        syllabus_exists = False
+        
+        if os.path.isfile(pdfInp):
+            pdf_syl_array.append(pdfInp)
+        elif syllabus_exists == False:
+            print("File " + pdfInp + " not found. ")
+
+    return pdf_syl_array
+ 
+def courseFromPDF(pdfFileName):
+    pdfObj = fitz.open(pdfFileName)
+    
+    pages = pdfObj.pageCount
+    
+    wrkbk = xlrd.open_workbook("Catalog.xlsx")
+    sheet = wrkbk.sheet_by_index(0)
+    
+    rows = sheet.nrows
+    courseNameFound = False
+    
+    
+    for page in range(pages):
+        pageObject = pdfObj.loadPage(page)
+        txt = pageObject.getText("text")
+        c = 0
+        while c < rows and courseNameFound == False:
+            current_course = sheet.cell_value(c, 0)
+            current_course = current_course.strip()
+            if current_course in txt:
+                courseNameFound = True
+            else:
+                c+= 1
+    
+    course = createCourseObj(current_course)
+    courseToTimeSlots(course)
 
 
 def createCourseObj(crs):
@@ -147,10 +246,6 @@ class Course:
     def getCourse_loc(self):
         return self.course_loc
         
-        
-#Template course object   
-course1 = Course("GS-QC-6301", "Practical Introduction to Programming for Scientists",
-                 "MF", "4:00-5:00 ", "N315")
 
 
 #Converts meeting time to numbers for excel spreadsheet
@@ -206,27 +301,86 @@ def courseToTimeSlots(crs):
     merge_format = wb.add_format({'align': 'center', 
     'text_wrap': True
     })
-    
-    
+
+    web_link = locationInfo(crs)
+    location = crs.getCourse_loc()
+
     big_string = crs.getCourse_num() + "\n" + crs.getCourse_time() + "\n" + crs.getCourse_loc()
                 
     for day in dayindeces:
         for v in range(begin, end+1):
             if v == begin:
                 #data.write(v, day, big_string, cell_format)
+                data.write_url(end, day, web_link, string=location)
                 data.merge_range(begin, day, end, day, big_string, merge_format)
-    
-           
-def find(ident, courseSeq):
-    try:
-        return courseSeq.index(ident)
-    except:
-        return -1
+                
 
-weekIdentifiers = ["M,W,F ", "T R", "M W F", "M,,", "T,,", "M W", "MTWR", "W ", "F ", "R "]
+def courseConflict(course_arr):
+    info = []
+    anyCourseConflict = False
+    for b in range(len(course_arr)):
+        
+        h=0
+        
+        wk = xlrd.open_workbook("Calendar.xlsx")
+        sht = wk.sheet_by_index(0)
+        
+        course1= createCourseObj(course_arr[b])
+        
+        day_array_one = dayToNumber(course1)
+        time_array_one = meetToNumber(course1)
+        
+        conflictDay = False
+        conflictTime = False
+        
+        if not(h == b-1):
+            h+=1
+        
+            course2= createCourseObj(course_arr[h])
+            dayConf = ""
+            
+            day_array_two = dayToNumber(course2)
+            time_array_two = meetToNumber(course2)
+            
+            
+            for i in range(len(day_array_one)):
+                if day_array_one[i] in day_array_two:
 
-    
-#ex_course = "GS-CC-6401"
+                    if day_array_one[i] == 1:
+                        dayConf = "Mon"
+                    elif day_array_one[i] == 2:
+                        dayConf = "Tues"
+                    elif day_array_one[i] ==3:
+                        dayConf = "Wed"
+                    elif day_array_one[i] == 4:
+                        dayConf = "Thurs"
+                    else:
+                        dayConf = "Fri"
+                        
+                    info.append(course_arr[b])
+                    info.append(course_arr[h])
+                    info.append(dayConf)
+                    
+                    conflictDay = True
+            
+            
+            time = 0
+            for j in range(len(time_array_one)):
+                if time_array_one[j] in time_array_two:
+                    time = time_array_one[j]
+                    info.append(str(sht.cell_value(time, 0)))
+                    conflictTime = True
+                    
+            if conflictDay and conflictTime:
+                print("These courses conflict with each other: " + "\n")
+                anyCourseConflict = True
+                
+                for x in info:
+                    if "GS" in x:
+                        print(x)
+                print("\n" + "Your schedule will contain the conflicting course that was most recently entered. \n")
+              
+    return anyCourseConflict
 
 
 

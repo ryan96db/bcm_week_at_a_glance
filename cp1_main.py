@@ -15,148 +15,53 @@ import os
 import fitz
 #install
 
-cp1_functions.blank()
+
 
 inp = True
 
-some_courses = ['GS-CP-6203', 'GS-CC-6202', 'GS-CC-6208']
+some_courses = ['GS-QC-6401', 'GS-GS-6400', 'GS-GS-6600', "GS-QC-5105", "GS-QC-5110"]
 
-# course_array = []
-# while inp:
-    
-#     input_class = input("Enter course name: ")
-    
-#     course_array.append(input_class)
-#     cont = input("Enter another course? (Y/N): ")
-#     if cont.upper() == 'N':
-#         inp = False
-#         break
-        
 
-# print(course_array)
-cp1_functions.blank()
 
-for j in range(len(some_courses)):
-    g = None
-    g = cp1_functions.createCourseObj(some_courses[j])
-    if not (g == None):
-        cp1_functions.courseToTimeSlots(g)
-        
+man = False
+syl = False
+val = False
+
+while val == False:
+    inp = input("Welcome to BCM ScheduleMaker! \nWould you like to enter your courses manually or with your syllabi (Choose M or S)? ")
+    if inp.upper() == "M":
+        val = True
+        man = True
+    elif inp.upper() == "S":
+        val = True
+        syl = True
     else:
-        print("Course Name Not Found")
+        print("Invalid input. Please try again.")
 
-#If user chooses to input file names of syllabi (PDF Format)
-#function will parse syllabus for course name and create
-#schedule from there.
+if man == True:
+    cp1_functions.blank()
+    course_ar = cp1_functions.manualCourseArray()
+    for curr_cors in course_ar:
+        course = cp1_functions.createCourseObj(curr_cors)
+        
+        cp1_functions.courseToTimeSlots(course)
+    conf = False
+    if len(course_ar) > 1:
+        conf = cp1_functions.courseConflict(course_ar)
+        
+    if conf == False:
+        print("Schedule Complete! ")
+elif syl == True:
+    cp1_functions.blank()
+    syl_arr = cp1_functions.syllabiArray()
+    for curr_cors in syl_arr:
+        cp1_functions.courseFromPDF(curr_cors)
+        
 
-def courseFromPDF(pdfFileName):
-    pdfObj = fitz.open(pdfFileName)
-    
-    pages = pdfObj.pageCount
-    
-    wrkbk = xlrd.open_workbook("Catalog.xlsx")
-    sheet = wrkbk.sheet_by_index(0)
-    
-    rows = sheet.nrows
-    courseNameFound = False
-    
-    
-    for page in range(pages):
-        pageObject = pdfObj.loadPage(page)
-        txt = pageObject.getText("text")
-        c = 0
-        while c < rows and courseNameFound == False:
-            current_course = sheet.cell_value(c, 0)
-            current_course = current_course.strip()
-            if current_course in txt:
-                courseNameFound = True
-            else:
-                c+= 1
-    
-    course = cp1_functions.createCourseObj(current_course)
-    cp1_functions.courseToTimeSlots(course)
-
-
-def courseConflict(course_arr):
-    info = []
-    anyCourseConflict = False
-    for b in range(len(course_arr)):
-        
-        h=0
-        
-        wk = xlrd.open_workbook("Calendar.xlsx")
-        sht = wk.sheet_by_index(0)
-        
-        twodimarray = []
-        course1= cp1_functions.createCourseObj(course_arr[b])
-        
-        day_array_one = cp1_functions.dayToNumber(course1)
-        time_array_one = cp1_functions.meetToNumber(course1)
-        
-        conflictDay = False
-        conflictTime = False
-        
-        if not(h == b-1):
-            h+=1
-        
-            course2= cp1_functions.createCourseObj(course_arr[h])
-            dayConf = ""
-            timeConf = ""
-            
-            day_array_two = cp1_functions.dayToNumber(course2)
-            time_array_two = cp1_functions.meetToNumber(course2)
-            
-            
-            for i in range(len(day_array_one)):
-                if day_array_one[i] in day_array_two:
-
-                    if day_array_one[i] == 1:
-                        dayConf = "Mon"
-                    elif day_array_one[i] == 2:
-                        dayConf = "Tues"
-                    elif day_array_one[i] ==3:
-                        dayConf = "Wed"
-                    elif day_array_one[i] == 4:
-                        dayConf = "Thurs"
-                    else:
-                        dayConf = "Fri"
-                        
-                    info.append(course_arr[b])
-                    info.append(course_arr[h])
-                    info.append(dayConf)
-                    
-                    conflictDay = True
-            
-            
-            time = 0
-            for j in range(len(time_array_one)):
-                if time_array_one[j] in time_array_two:
-                    time = time_array_one[j]
-                    info.append(str(sht.cell_value(time, 0)))
-                    conflictTime = True
-                    
-            if conflictDay and conflictTime:
-                print("These courses conflict with each other: " + "\n")
-                anyCourseConflict = True
-                noConflictingCourse = False
-                for x in info:
-                    if "GS" in x:
-                        print(x)
-                print("\n" + "Your schedule will contain the conflicting course that was most recently entered. \n")
-              
-    return anyCourseConflict
- 
-# q = courseConflict(some_courses)
-# if q == False:
-#     print("Schedule Complete! ")
-# else:
-#courseConflict(some_courses)
-    
 cp1_functions.wb.close()
     
     
     
-  
 
 
 
